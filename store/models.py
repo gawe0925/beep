@@ -9,7 +9,7 @@ class Customer(models.Model):
     mobile = models.CharField(max_length=50, blank=False)
     address = models.CharField(max_length=200, blank=False)
     post_code = models.CharField(max_length=10, blank=False)
-    points = models.IntegerField(blank=True)
+    points = models.IntegerField(max_length=50, blank=True)
     voucher = models.CharField(max_length=50, blank=True)
     
     # subscription
@@ -70,18 +70,9 @@ class Product(models.Model):
             return "Unavaliable"
         else:
             return "Avaliable"
-
-
-# mapping order's status
-class OrderStatus(models.IntegerChoices):
-    CANCELED = 0, "canceled"
-    PROCESSING = 1, "processing"
-    SHIPPED = 2, "shipped"
-    COLLECTED = 3, "collected"
-
-
+    
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL)
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
@@ -89,7 +80,11 @@ class Order(models.Model):
     address = models.CharField(max_length=200, blank=False)
     post_code = models.CharField(max_length=10, blank=False)
     total_amount = models.FloatField(max_length=100, blank=False)
-    order_status = models.IntegerField(choices=OrderStatus.choices, default=OrderStatus.PROCESSING)
+    order_status = models.Choices(max_length=5,
+                                  value={0 : "canceled", 
+                                         1 : "processing", 
+                                         2 : "shipped", 
+                                         3 : "collected"}, default=1)
     order_canceled = models.BooleanField(default=False, blank=False)
 
     # reserved fields for potential future expansion
