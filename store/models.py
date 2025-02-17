@@ -1,9 +1,9 @@
 import random, string
 from django.db import models
 from django.utils.timezone import now
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 
-class Customer(User):
+class Customer(AbstractUser):
     mobile = models.CharField(max_length=200, blank=True)
     address = models.CharField(max_length=200, blank=True)
     post_code = models.CharField(max_length=10, blank=True)
