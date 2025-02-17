@@ -4,6 +4,7 @@ from django.utils.timezone import now
 from django.contrib.auth.models import AbstractUser
 
 class Customer(AbstractUser):
+    email = models.EmailField(unique=True, blank=False)
     mobile = models.CharField(max_length=200, blank=True)
     address = models.CharField(max_length=200, blank=True)
     post_code = models.CharField(max_length=10, blank=True)
@@ -25,6 +26,9 @@ class Customer(AbstractUser):
     undefined_8 = models.CharField(max_length=200, blank=False)
     undefined_9 = models.CharField(max_length=200, blank=False)
     undefined_10 = models.CharField(max_length=200, blank=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
     def count_voucher(self):
         try:
