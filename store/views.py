@@ -1,38 +1,23 @@
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 
 from .permissions import IsAdminOrReadyOnly
 from .models import Customer, Product, Order
 from .serializer import CustomerSerializer, ProductSerializer, OrderSerializer
 
 
-class CustomerListCreateView(ListCreateAPIView):
+class CustomerListCreateView(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
-    def create_customer(self, request):
-        pass
 
-    def update_customer(self, request):
-        pass
-
-class ProductListCreateView(ListCreateAPIView):
+class ProductListCreateView(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadyOnly]
 
-    def create_item(self, request):
-        pass
 
-    def update_item(self, request):
-        pass
-
-
-class OrderListCreateView(ListCreateAPIView):
+class OrderListCreateView(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-
-    def create_order(self, request):
-        pass
-
-    def update_order(self, request):
-        pass
+    permission_classes = [IsAuthenticated]
