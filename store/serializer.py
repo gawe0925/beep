@@ -4,8 +4,7 @@ from .models import Customer, Product, Order
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        exclude = '__all__'
-
+        field = '__all__'
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:

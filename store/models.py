@@ -9,8 +9,8 @@ class Customer(models.Model):
     mobile = models.CharField(max_length=50, blank=False)
     address = models.CharField(max_length=200, blank=False)
     post_code = models.CharField(max_length=10, blank=False)
-    points = models.IntegerField(max_length=50, blank=True)
-    voucher = models.CharField(max_length=50, blank=True)
+    points = models.IntegerField(blank=True)
+    voucher = models.IntegerField(blank=True)
     
     # subscription
     premium = models.BooleanField(default=False, blank=False)

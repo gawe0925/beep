@@ -6,18 +6,18 @@ from .models import Customer, Product, Order
 from .serializer import CustomerSerializer, ProductSerializer, OrderSerializer
 
 
-class CustomerListCreateView(ModelViewSet):
+class CustomerViewSet(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
 
-class ProductListCreateView(ModelViewSet):
+class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadyOnly]
 
 
-class OrderListCreateView(ModelViewSet):
+class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
