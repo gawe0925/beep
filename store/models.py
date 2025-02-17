@@ -79,6 +79,7 @@ class OrderStatus(models.IntegerChoices):
 
 class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    items = models.ForeignKey(Product, on_delete=models.CASCADE)
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)

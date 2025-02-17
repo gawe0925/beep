@@ -10,6 +10,10 @@ class CustomerViewSet(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
+    def create(self, request):
+        if self.action == "create":
+            pass
+
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
