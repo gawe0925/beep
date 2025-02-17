@@ -10,9 +10,12 @@ class CustomerViewSet(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
-    def create(self, request):
-        if self.action == "create":
-            pass
+    def update(self, instance, validated_date):
+        if not self.context['request'].urse.is_staff:
+            validated_date.pop('points', None)
+            validated_date.pop('voucher', None)
+
+            return super().update(instance, validated_date)
 
 
 class ProductViewSet(ModelViewSet):

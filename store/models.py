@@ -9,8 +9,8 @@ class Customer(models.Model):
     mobile = models.CharField(max_length=50, blank=False)
     address = models.CharField(max_length=200, blank=False)
     post_code = models.CharField(max_length=10, blank=False)
-    points = models.IntegerField(blank=True)
-    voucher = models.IntegerField(blank=True)
+    points = models.IntegerField(blank=True, default=0)
+    voucher = models.IntegerField(blank=True, default=0)
     
     # subscription
     premium = models.BooleanField(default=False, blank=False)
@@ -65,6 +65,10 @@ class Product(models.Model):
     undefined_9 = models.CharField(max_length=200, blank=False)
     undefined_10 = models.CharField(max_length=200, blank=False)
 
+    def __str__(self):
+        return self.name
+
+    
     def stock_status(self): 
         if self.amount <= 0:
             return "Unavaliable"
