@@ -14,7 +14,7 @@ class Customer(models.Model):
     
     # subscription
     premium = models.BooleanField(default=False, blank=False)
-    premium_issued_date = models.DateField(max_length=50, blank=True)
+    premium_issued_date = models.DateField(blank=True, null=True)
 
     # reserved fields for potential future expansion
     undefined_1 = models.CharField(max_length=200, blank=False)
