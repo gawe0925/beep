@@ -1,7 +1,9 @@
 import random, string
+from datetime import date
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import make_password
 
 class Customer(AbstractUser):
     email = models.EmailField(unique=True, blank=False)
@@ -42,6 +44,18 @@ class Customer(AbstractUser):
                 return f"Current points: {self.points}"
         except:
             print('points error')
+
+    def save(self, *args, **kwargs):
+        if self.pk is None or not self.password.startswith('pbkdf2_sha256$'):
+            self.password = make_password(self.password)
+        
+        elif self.pk:
+            # member's premium control
+            if self.premium and not self.premium_issued_date:
+                self.premium_issued_date = date.today()
+            elif not self.premium and self.premium_issued_date:
+                self.premium_issued_date = None
+        super().save(*args, **kwargs)
 
 
 class Product(models.Model):

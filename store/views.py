@@ -11,13 +11,18 @@ class CustomerViewSet(ModelViewSet):
     serializer_class = CustomerSerializer
 
     def update(self, instance, validated_date):
-        print('????',self.context)
         if not self.context['request'].urse.is_staff:
             validated_date.pop('points', 0)
             validated_date.pop('voucher', 0)
 
             return super().update(instance, validated_date)
-
+        
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Customer.objects.all()
+        return Customer.objects.filter(id=user.id)
+    
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
