@@ -45,14 +45,26 @@ class Customer(AbstractUser):
         except:
             print('points error')
 
+    def premium_check(self):
+        today = date.today()
+        if self.premium_issued_date - today < 0:
+            self.premium = False
+            self.premium_issued_date = None
+            print("updated member to be non premium member")
+            return
+
     def save(self, *args, **kwargs):
         if self.pk is None or not self.password.startswith('pbkdf2_sha256$'):
             self.password = make_password(self.password)
         
         elif self.pk:
             # member's premium control
-            if self.premium and not self.premium_issued_date:
-                self.premium_issued_date = date.today()
+            if self.premium: 
+                if not self.premium_issued_date:
+                    self.premium_issued_date = date.today()
+                elif self.premium_issued_date:
+                    if self.premium_issued_date - date.today() < 0:
+                        pass
             elif not self.premium and self.premium_issued_date:
                 self.premium_issued_date = None
         super().save(*args, **kwargs)

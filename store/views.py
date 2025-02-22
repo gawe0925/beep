@@ -1,4 +1,6 @@
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from django.core.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from .permissions import IsAdminOrReadyOnly
@@ -10,18 +12,30 @@ class CustomerViewSet(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
-    def update(self, instance, validated_date):
-        if not self.context['request'].urse.is_staff:
-            validated_date.pop('points', 0)
-            validated_date.pop('voucher', 0)
-
-            return super().update(instance, validated_date)
-        
     def get_queryset(self):
         user = self.request.user
+        # permission control
         if user.is_staff:
             return Customer.objects.all()
         return Customer.objects.filter(id=user.id)
+
+    def get_object(self):
+        user = self.request.user
+        obj = super().get_object()
+        # permission control
+        if not user.is_staff and obj != user:
+            raise PermissionDenied('Access Denied')
+        return obj
+
+    def partial_update(self, request, *args, **kwargs):
+        # fliter queryset with user's info
+        instance = self.get_object()
+        # partially update request data
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        # if update result is not valid, then raise error message 
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
     
 
 class ProductViewSet(ModelViewSet):
