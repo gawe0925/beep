@@ -48,15 +48,15 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    items_name = serializers.SerializerMethodField()
+    item_details = serializers.SerializerMethodField()
     # items_name = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
 
     class Meta:
         model = Order
-        fields = ["items_name", "first_name", "last_name",
-                  "mobile", "address", "post_code", "order_canceled", "total_amount"]
+        fields = ["items", "first_name", "last_name", 
+                  "mobile", "address", "post_code", "order_canceled", "total_amount", "item_details"]
         read_only_fields = ["order_status", ]
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -70,6 +70,33 @@ class OrderSerializer(serializers.ModelSerializer):
             self.fields.pop('order_status', None)
             self.fields.pop('order_canceled', None)
 
+    def count_total_amount(self, item_ids):
+        total_amount = 0
+        products = Product.objects.filter(id__in=item_ids)
+        if products:
+            for product in products:
+                total_amount += product.price
+        else:
+            raise Exception('Not valid items')
+        
+        return total_amount
 
-    def get_items_name(self, obj):
-        return obj.items.name if obj.items else None
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+
+        if request and request.user:
+            validated_data['customer'] = request.user
+        else:
+            raise serializers.ValidationError("Customer is required")
+        
+        item_data = validated_data.pop('items', [])
+        item_ids = [item.id for item in item_data]
+        total_amount = self.count_total_amount(item_ids)
+        order = Order.objects.create(total_amount=total_amount, **validated_data)
+        order.save()
+        order.items.set(item_ids)
+        return order
+
+    def get_item_details(self, obj):
+        items = obj.items.all()
+        return [{"name": item.name, "stream": item.stream} for item in items]

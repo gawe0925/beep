@@ -32,18 +32,19 @@ class Customer(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-    def count_voucher(self):
+    def count_voucher(self, *args, **kwargs):
         try:
             tickets = self.points//100
             if tickets:
                 self.points = self.points - tickets*100
                 self.voucher += tickets
-                self.save()
                 return f"Current number of vouchers: {self.voucher} and current points: {self.points}"
             else:
                 return f"Current points: {self.points}"
         except:
-            print('points error')
+            print("points error")
+
+        super().save(*args, **kwargs)
 
     def premium_check(self):
         today = date.today()
@@ -111,7 +112,8 @@ class OrderStatus(models.IntegerChoices):
 
 class Order(models.Model):
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
-    items = models.ForeignKey(Product, on_delete=models.CASCADE)
+    items = models.ManyToManyField(Product, blank=False)
+    amount = models.IntegerField(blank=False, default=0)
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
@@ -135,7 +137,7 @@ class Order(models.Model):
     undefined_10 = models.CharField(max_length=200, blank=False)
     
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if not self.serial_unmber:
             # generate new serial number
             date_part = now().strftime("%Y%m%d")
@@ -143,17 +145,19 @@ class Order(models.Model):
             self.serial_unmber = f"CCOR-{date_part}-{random_part}"
             self.customer.points += int(self.total_amount)
             self.order_status = 1
-            self.save()
             print(f"{self.serial_unmber}_has been placed")
             return f"Order number: {self.serial_unmber}, has been placed"
 
-        if self.serial_unmber and self.order_canceled:
+        elif self.serial_unmber and self.order_canceled:
             self.customer.points -= int(self.total_amount)
-            if self.customer.points < 0:
+            if self.customer.points < 0 and self.customer.voucher > 0:
                 self.customer.voucher -= 1
                 self.customer.points += 100
+            else:
+                raise Exception('Points error')
             self.order_canceled = True
             self.order_status = 0
-            self.save()
             print(f"{self.serial_unmber}_has been canceled")
             return f"Order number: {self.serial_unmber}, has been canceled"
+        
+        super().save(*args, **kwargs)

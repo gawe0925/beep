@@ -9,7 +9,7 @@ from .serializer import CustomerSerializer, ProductSerializer, OrderSerializer
 
 
 class CustomerViewSet(ModelViewSet):
-    queryset = Customer.objects.all()
+    queryset = Customer.objects.prefetch_related("customer", "items").all()
     serializer_class = CustomerSerializer
 
     def get_queryset(self):
