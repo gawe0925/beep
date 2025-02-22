@@ -49,11 +49,27 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items_name = serializers.SerializerMethodField()
+    # items_name = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
 
     class Meta:
         model = Order
-        fields = ["items_name", "first_name", "last_name", 
-                  "mobile", "address", "post_code", "total_amount", "order_status", "order_canceled",]
+        fields = ["items_name", "first_name", "last_name",
+                  "mobile", "address", "post_code", "order_canceled", "total_amount"]
+        read_only_fields = ["order_status", ]
 
-    def get_product_name(self, obj):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        request = self.context.get('request', None)
+        user = request.user
+
+        if user.is_staff:
+            pass
+        elif user.is_authenticated and request.method == 'POST':
+            self.fields.pop('total_amount', None)
+            self.fields.pop('order_status', None)
+            self.fields.pop('order_canceled', None)
+
+
+    def get_items_name(self, obj):
         return obj.items.name if obj.items else None

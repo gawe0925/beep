@@ -142,6 +142,7 @@ class Order(models.Model):
             random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
             self.serial_unmber = f"CCOR-{date_part}-{random_part}"
             self.customer.points += int(self.total_amount)
+            self.order_status = 1
             self.save()
             print(f"{self.serial_unmber}_has been placed")
             return f"Order number: {self.serial_unmber}, has been placed"
