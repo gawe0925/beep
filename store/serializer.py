@@ -1,5 +1,5 @@
 from rest_framework import serializers, response
-from .models import Customer, Product, Order
+from .models import Customer, Product, Order, OrderItem
 
 class CustomerSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -47,13 +47,20 @@ class ProductSerializer(serializers.ModelSerializer):
                    "undefined_9", "undefined_10",]
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source='product.name')
+    class Meta:
+        model = OrderItem
+        fields = ['order', 'product', 'product_name', 'quantity', 'price']
+
+
 class OrderSerializer(serializers.ModelSerializer):
     item_details = serializers.SerializerMethodField()
-    # items_name = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
+    products = OrderItemSerializer(many=True, source='orderitem_set')
 
     class Meta:
         model = Order
-        fields = ["items", "first_name", "last_name", 
+        fields = ["items", "products", "first_name", "last_name", 
                   "mobile", "address", "post_code", "order_canceled", "total_amount", "item_details"]
         read_only_fields = ["order_status", ]
     
