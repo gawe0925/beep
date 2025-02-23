@@ -1,5 +1,5 @@
 from rest_framework import serializers, response
-from .models import Customer, Product, Order
+from .models import Customer, Product, Order, OrderItem
 
 class CustomerSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -47,13 +47,63 @@ class ProductSerializer(serializers.ModelSerializer):
                    "undefined_9", "undefined_10",]
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source='product.name')
+    class Meta:
+        model = OrderItem
+        fields = ['order', 'product', 'product_name', 'quantity', 'price']
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    items_name = serializers.SerializerMethodField()
+    item_details = serializers.SerializerMethodField()
+    products = OrderItemSerializer(many=True, source='orderitem_set')
 
     class Meta:
         model = Order
-        fields = ["items_name", "first_name", "last_name", 
-                  "mobile", "address", "post_code", "total_amount", "order_status", "order_canceled",]
+        fields = ["items", "products", "first_name", "last_name", 
+                  "mobile", "address", "post_code", "order_canceled", "total_amount", "item_details"]
+        read_only_fields = ["order_status", ]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def get_product_name(self, obj):
-        return obj.items.name if obj.items else None
+        request = self.context.get('request', None)
+        user = request.user
+
+        if user.is_staff:
+            pass
+        elif user.is_authenticated and request.method == 'POST':
+            self.fields.pop('total_amount', None)
+            self.fields.pop('order_status', None)
+            self.fields.pop('order_canceled', None)
+
+    def count_total_amount(self, item_ids):
+        total_amount = 0
+        products = Product.objects.filter(id__in=item_ids)
+        if products:
+            for product in products:
+                total_amount += product.price
+        else:
+            raise Exception('Not valid items')
+        
+        return total_amount
+
+    def create(self, validated_data):
+        request = self.context.get('request', None)
+
+        if request and request.user:
+            validated_data['customer'] = request.user
+        else:
+            raise serializers.ValidationError("Customer is required")
+        
+        item_data = validated_data.pop('items', [])
+        item_ids = [item.id for item in item_data]
+        total_amount = self.count_total_amount(item_ids)
+        order = Order.objects.create(total_amount=total_amount, **validated_data)
+        order.save()
+        order.items.set(item_ids)
+        return order
+
+    def get_item_details(self, obj):
+        items = obj.items.all()
+        return [{"name": item.name, "stream": item.stream} for item in items]

@@ -4,12 +4,12 @@ from django.core.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
 from .permissions import IsAdminOrReadyOnly
-from .models import Customer, Product, Order
-from .serializer import CustomerSerializer, ProductSerializer, OrderSerializer
+from .models import Customer, Product, Order, OrderItem
+from .serializer import CustomerSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer
 
 
 class CustomerViewSet(ModelViewSet):
-    queryset = Customer.objects.all()
+    queryset = Customer.objects.prefetch_related("customer", "items").all()
     serializer_class = CustomerSerializer
 
     def get_queryset(self):
@@ -47,4 +47,15 @@ class ProductViewSet(ModelViewSet):
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+        return Order.objects.filter(customer=user)
+    
+class OrderItemViewSet(ModelViewSet):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated]

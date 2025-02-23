@@ -10,8 +10,8 @@ class Customer(AbstractUser):
     mobile = models.CharField(max_length=200, blank=True)
     address = models.CharField(max_length=200, blank=True)
     post_code = models.CharField(max_length=10, blank=True)
-    points = models.IntegerField(blank=True, default=0)
-    voucher = models.IntegerField(blank=True, default=0)
+    points = models.PositiveIntegerField(blank=True, default=0)
+    voucher = models.PositiveIntegerField(blank=True, default=0)
     
     # subscription
     premium = models.BooleanField(default=False, blank=False)
@@ -32,18 +32,19 @@ class Customer(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-    def count_voucher(self):
+    def count_voucher(self, *args, **kwargs):
         try:
             tickets = self.points//100
             if tickets:
                 self.points = self.points - tickets*100
                 self.voucher += tickets
-                self.save()
                 return f"Current number of vouchers: {self.voucher} and current points: {self.points}"
             else:
                 return f"Current points: {self.points}"
         except:
-            print('points error')
+            print("points error")
+
+        super().save(*args, **kwargs)
 
     def premium_check(self):
         today = date.today()
@@ -54,7 +55,7 @@ class Customer(AbstractUser):
             return
 
     def save(self, *args, **kwargs):
-        if self.pk is None or not self.password.startswith('pbkdf2_sha256$'):
+        if self.pk is None and not self.password.startswith('pbkdf2_sha256$'):
             self.password = make_password(self.password)
         
         elif self.pk:
@@ -73,9 +74,9 @@ class Customer(AbstractUser):
 class Product(models.Model):
     name = models.CharField(max_length=50, blank=False)
     brand = models.CharField(max_length=50, blank=True)
-    price = models.FloatField(max_length=50, blank=False)
-    cost = models.FloatField(max_length=50, blank=False)
-    amount = models.CharField(max_length=50, blank=False)
+    price = models.DecimalField(max_digits=50, decimal_places=2)
+    cost = models.DecimalField(max_digits=50, decimal_places=2)
+    amount = models.PositiveIntegerField(blank=False)
     color = models.CharField(max_length=50, blank=True)
     stream = models.CharField(max_length=50, blank=True)
     section = models.CharField(max_length=50, blank=True)
@@ -109,16 +110,17 @@ class OrderStatus(models.IntegerChoices):
     SHIPPED = 2, "Shipped"
     COLLECTED = 3, "Collected"
 
+
 class Order(models.Model):
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
-    items = models.ForeignKey(Product, on_delete=models.CASCADE)
+    items = models.ManyToManyField(Product, through='OrderItem')
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
     mobile = models.CharField(max_length=50, blank=False)
     address = models.CharField(max_length=200, blank=False)
     post_code = models.CharField(max_length=10, blank=False)
-    total_amount = models.FloatField(max_length=100, blank=False)
+    total_amount = models.DecimalField(max_digits=100, blank=False, decimal_places=2)
     order_status = models.IntegerField(choices=OrderStatus.choices, default=OrderStatus.PROCESSING)
     order_canceled = models.BooleanField(default=False, blank=False)
 
@@ -135,24 +137,37 @@ class Order(models.Model):
     undefined_10 = models.CharField(max_length=200, blank=False)
     
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if not self.serial_unmber:
             # generate new serial number
             date_part = now().strftime("%Y%m%d")
             random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
             self.serial_unmber = f"CCOR-{date_part}-{random_part}"
             self.customer.points += int(self.total_amount)
-            self.save()
+            self.order_status = 1
             print(f"{self.serial_unmber}_has been placed")
             return f"Order number: {self.serial_unmber}, has been placed"
 
-        if self.serial_unmber and self.order_canceled:
+        elif self.serial_unmber and self.order_canceled:
             self.customer.points -= int(self.total_amount)
-            if self.customer.points < 0:
+            if self.customer.points < 0 and self.customer.voucher > 0:
                 self.customer.voucher -= 1
                 self.customer.points += 100
+            else:
+                raise Exception('Points error')
             self.order_canceled = True
             self.order_status = 0
-            self.save()
             print(f"{self.serial_unmber}_has been canceled")
             return f"Order number: {self.serial_unmber}, has been canceled"
+        
+        super().save(*args, **kwargs)
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=100, decimal_places=2)
+
+    def __str__(self):
+        return f"Product_name:{self.product.name} - Order_quantity:{self.quantity}"
