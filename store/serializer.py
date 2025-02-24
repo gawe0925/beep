@@ -78,16 +78,23 @@ class OrderSerializer(serializers.ModelSerializer):
             self.fields.pop('order_status', None)
             self.fields.pop('order_canceled', None)
 
-    def count_total_amount(self, item_ids):
-        total_amount = 0
-        products = Product.objects.filter(id__in=item_ids)
-        if products:
-            for product in products:
-                total_amount += product.price
-        else:
-            raise Exception('Not valid items')
-        
-        return total_amount
+    def stock_check(self, items):
+        count = 0
+        list_len = len(items)
+        for item in items:
+            order_quantity = item['quantity']
+            product_name = item['product'].name
+            stock_amount = item['product'].amount
+
+            if order_quantity > stock_amount:
+                print(f"{product_name} is insufficient, stock_amount:{stock_amount}")
+                item['quantity'] = stock_amount
+                count += 1
+
+        if count == list_len:
+            raise serializers.ValidationError("Ordered products are currently out of stock")
+        return items
+
 
     def create(self, validated_data):
         request = self.context.get('request', None)
@@ -98,16 +105,24 @@ class OrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Customer is required")
 
         items_data = validated_data.pop('products', [])
+        valid_items = self.stock_check(items_data)
         order = Order.objects.create(**validated_data)
         order.total_amount = 0
         order.save()
 
         accumulate_amount = 0
         # create relation between Order and OrderItem
-        for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
-            print(f'Created OrderItem - product_name:{item_data['product'].name}, quantity:{item_data['quantity']}')
-            accumulate_amount += item_data['product'].price * item_data['quantity']
+        for item in valid_items:
+            OrderItem.objects.create(order=order, **item)
+            print(f'Created OrderItem - product_name:{item['product'].name}, quantity:{item['quantity']}')
+            accumulate_amount += item['product'].price * item['quantity']
+
+            # update stock
+            if item['quantity'] > 0:
+                product = Product.objects.get(id=item['product'].id)
+                product.amount = product.amount - item['quantity']
+                print(f"updated {product.name}'s stock number")
+                product.save()
 
         # generate serial_number for order
         order.total_amount = accumulate_amount
