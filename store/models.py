@@ -112,7 +112,7 @@ class OrderStatus(models.IntegerChoices):
 
 
 class Order(models.Model):
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     items = models.ManyToManyField(Product, through='OrderItem')
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
@@ -143,7 +143,6 @@ class Order(models.Model):
             date_part = now().strftime("%Y%m%d")
             random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
             self.serial_unmber = f"CCOR-{date_part}-{random_part}"
-            self.customer.points += int(self.total_amount)
             self.order_status = 1
             print(f"{self.serial_unmber}_has been placed")
             return f"Order number: {self.serial_unmber}, has been placed"
@@ -167,7 +166,6 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=100, decimal_places=2)
 
     def __str__(self):
         return f"Product_name:{self.product.name} - Order_quantity:{self.quantity}"
