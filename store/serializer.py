@@ -51,18 +51,19 @@ class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
     class Meta:
         model = OrderItem
-        fields = ['order', 'product', 'product_name', 'quantity', 'price']
+        # fields = ['order', 'product', 'product_name', 'quantity', 'price']
+        exclude = ["order", "price"]
 
 
 class OrderSerializer(serializers.ModelSerializer):
     item_details = serializers.SerializerMethodField()
-    products = OrderItemSerializer(many=True, source='orderitem_set')
+    products = OrderItemSerializer(many=True, write_only=True)
 
     class Meta:
         model = Order
-        fields = ["items", "products", "first_name", "last_name", 
-                  "mobile", "address", "post_code", "order_canceled", "total_amount", "item_details"]
-        read_only_fields = ["order_status", ]
+        fields = ["products", "first_name", "last_name", 
+                  "mobile", "address", "post_code", "order_canceled", "item_details"]
+        read_only_fields = ["order_status", "total_amount", ]
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,13 +96,23 @@ class OrderSerializer(serializers.ModelSerializer):
             validated_data['customer'] = request.user
         else:
             raise serializers.ValidationError("Customer is required")
-        
-        item_data = validated_data.pop('items', [])
-        item_ids = [item.id for item in item_data]
-        total_amount = self.count_total_amount(item_ids)
-        order = Order.objects.create(total_amount=total_amount, **validated_data)
+
+        items_data = validated_data.pop('products', [])
+        order = Order.objects.create(**validated_data)
+        order.total_amount = 0
         order.save()
-        order.items.set(item_ids)
+
+        accumulate_amount = 0
+        # create relation between Order and OrderItem
+        for item_data in items_data:
+            OrderItem.objects.create(order=order, **item_data)
+            print(f'Created OrderItem - product_name:{item_data['prodcut'].name}, quantity:{item_data['quantity']}')
+            accumulate_amount += items_data['product'].price * items_data['quantity']
+
+        # generate serial_number for order
+        order.total_amount = accumulate_amount
+        order.save()
+
         return order
 
     def get_item_details(self, obj):

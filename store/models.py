@@ -143,7 +143,6 @@ class Order(models.Model):
             date_part = now().strftime("%Y%m%d")
             random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
             self.serial_unmber = f"CCOR-{date_part}-{random_part}"
-            self.customer.points += int(self.total_amount)
             self.order_status = 1
             print(f"{self.serial_unmber}_has been placed")
             return f"Order number: {self.serial_unmber}, has been placed"
@@ -171,3 +170,10 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"Product_name:{self.product.name} - Order_quantity:{self.quantity}"
+    
+    # def save(self, *args, **kwargs):
+    #     item_price = self.product.price
+    #     if not self.price:
+    #         self.price = item_price * self.quantity
+        
+    #     super().save(*args, **kwargs)
