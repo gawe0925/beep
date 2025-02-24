@@ -112,7 +112,7 @@ class OrderStatus(models.IntegerChoices):
 
 
 class Order(models.Model):
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     items = models.ManyToManyField(Product, through='OrderItem')
     serial_unmber = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50, blank=False)
@@ -166,14 +166,6 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=100, decimal_places=2)
 
     def __str__(self):
         return f"Product_name:{self.product.name} - Order_quantity:{self.quantity}"
-    
-    # def save(self, *args, **kwargs):
-    #     item_price = self.product.price
-    #     if not self.price:
-    #         self.price = item_price * self.quantity
-        
-    #     super().save(*args, **kwargs)

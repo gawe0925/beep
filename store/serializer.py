@@ -52,7 +52,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         # fields = ['order', 'product', 'product_name', 'quantity', 'price']
-        exclude = ["order", "price"]
+        exclude = ["order"]
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -106,8 +106,8 @@ class OrderSerializer(serializers.ModelSerializer):
         # create relation between Order and OrderItem
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
-            print(f'Created OrderItem - product_name:{item_data['prodcut'].name}, quantity:{item_data['quantity']}')
-            accumulate_amount += items_data['product'].price * items_data['quantity']
+            print(f'Created OrderItem - product_name:{item_data['product'].name}, quantity:{item_data['quantity']}')
+            accumulate_amount += item_data['product'].price * item_data['quantity']
 
         # generate serial_number for order
         order.total_amount = accumulate_amount
